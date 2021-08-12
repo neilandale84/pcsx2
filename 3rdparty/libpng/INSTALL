@@ -49,11 +49,13 @@ up-to-date set of tools, running ./autogen.sh in a git clone before
 running ./configure may fix the problem.  To be really sure that you
 aren't using any of the included pre-built scripts, you can do this:
 
-    ./configure --enable-maintainer-mode
+    
+
     make maintainer-clean
     ./autogen.sh --maintainer --clean
     ./autogen.sh --maintainer
-    ./configure [--prefix=/path] [other options]
+   
+
     make
     make install
     make check
