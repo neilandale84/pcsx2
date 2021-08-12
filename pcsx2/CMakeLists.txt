@@ -18,19 +18,7 @@ set(CommonFlags
     -Wno-parentheses
     -Wno-missing-braces
     -Werror=date-time
-#    -DWX_PRECOMP
 	)
-
-# Largely turning off because LegacyPluginAPI_Common in Plugins.h spams really badly in gcc 8 due to the memzero initialization.
-# Should probably be fixed properly, but for now this should work.
-if(GCC_VERSION VERSION_EQUAL "8.0" OR GCC_VERSION VERSION_GREATER "8.0")
-    set(CommonFlags
-	    ${CommonFlags}
-	    -Wno-class-memaccess
-    )
-endif()
-
-
 
 if ("${PGO}" STREQUAL "generate")
     set(pcsx2FinalFlags -fprofile-generate)
@@ -40,7 +28,7 @@ else()
     set(pcsx2FinalFlags "")
 endif()
 
-set(pcsx2FinalFlags ${pcsx2FinalFlags} "-DSPU2X_PORTAUDIO" ${CommonFlags})
+set(pcsx2FinalFlags ${pcsx2FinalFlags} ${CommonFlags})
 
 if(XDG_STD)
     set(pcsx2FinalFlags ${pcsx2FinalFlags} -DXDG_STD)
@@ -85,7 +73,6 @@ set(pcsx2Sources
 	Patch.cpp
 	Patch_Memory.cpp
 	Pcsx2Config.cpp
-	PluginManager.cpp
 	PrecompiledHeader.cpp
 	R3000A.cpp
 	R3000AInterpreter.cpp
@@ -287,7 +274,6 @@ set(pcsx2DebugToolsHeaders
 	# gui sources
 	set(pcsx2GuiSources
 		gui/AppConfig.cpp
-		gui/AppCorePlugins.cpp
 		gui/AppCoreThread.cpp
 		gui/AppEventSources.cpp
 		gui/AppGameDatabase.cpp
@@ -601,32 +587,24 @@ set(pcsx2FinalLibs
     ${Platform_Libs}
 )
 
-if(BUILTIN_GS)
-    set(pcsx2FinalLibs GSdx ${pcsx2FinalLibs})
-    if(MSVC)
-       set(pcsx2FinalSources ${pcsx2FinalSources})
-    endif()
+set(pcsx2FinalLibs GS ${pcsx2FinalLibs})
+if(MSVC)
+  set(pcsx2FinalSources ${pcsx2FinalSources})
 endif()
-if(BUILTIN_PAD)
-    set(pcsx2FinalLibs ${pcsx2FinalLibs} onepad)
-endif()
-if(BUILTIN_USB)
-    set(pcsx2FinalLibs ${pcsx2FinalLibs} USBnull-0.7.0)
-endif()
-if(BUILTIN_DEV9)
-  if(ENABLE_DEV9GHZDRK)
-    set(pcsx2FinalLibs ${pcsx2FinalLibs} dev9ghzdrk-0.4)
-  else()
-    set(pcsx2FinalLibs ${pcsx2FinalLibs} dev9null-0.5.0)
-  endif()
+set(pcsx2FinalLibs ${pcsx2FinalLibs} PAD)
+set(pcsx2FinalLibs ${pcsx2FinalLibs} USB)
+if(ENABLE_DEV9GHZDRK)
+    set(pcsx2FinalLibs ${pcsx2FinalLibs} DEV9)
+else()
+    set(pcsx2FinalLibs ${pcsx2FinalLibs} DEV9)
 endif()
 
-# additonal include directories
+# additional include directories
 include_directories(
     gui
     x86
     ${db_res_bin}
-	${CMAKE_BINARY_DIR}/pcsx2/gui
+    ${CMAKE_BINARY_DIR}/pcsx2/gui
 )
 
 if(MSVC)
@@ -644,7 +622,7 @@ endif()
    add_library(${Output} SHARED
      ${CMAKE_SOURCE_DIR}/libretro/main.cpp
      ${pcsx2FinalSources}
-    "../libretro/language_injector.cpp" "../libretro/retro_messager.cpp")
+    "../libretro/language_injector.cpp" "../libretro/retro_messager.cpp" "EmuOptionsVM.h" "EmuOptionsUI.h")
    include_directories(. ${CMAKE_SOURCE_DIR}/libretro)
 #   set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
    set_target_properties(pcsx2_libretro PROPERTIES PREFIX "")

@@ -39,18 +39,6 @@ enum AppEventType
 	AppStatus_Exiting
 };
 
-enum PluginEventType
-{
-	CorePlugins_Loaded,
-	CorePlugins_Init,
-	CorePlugins_Opening,		// dispatched prior to plugins being opened
-	CorePlugins_Opened,			// dispatched after plugins are opened
-	CorePlugins_Closing,		// dispatched prior to plugins being closed
-	CorePlugins_Closed,			// dispatched after plugins are closed
-	CorePlugins_Shutdown,
-	CorePlugins_Unloaded,
-};
-
 struct AppEventInfo
 {
 	AppEventType	evt_type;
@@ -63,14 +51,7 @@ struct AppEventInfo
 
 struct AppSettingsEventInfo : AppEventInfo
 {
-	IniInterface&	m_ini;
-
-	AppSettingsEventInfo( IniInterface&	ini, AppEventType evt_type );
-
-	IniInterface& GetIni() const
-	{
-		return const_cast<IniInterface&>(m_ini);
-	}
+	AppSettingsEventInfo(AppEventType evt_type );
 };
 
 // --------------------------------------------------------------------------------------
@@ -102,55 +83,13 @@ public:
 };
 
 // --------------------------------------------------------------------------------------
-//  IEventListener_Plugins
-// --------------------------------------------------------------------------------------
-class IEventListener_Plugins : public IEventDispatcher<PluginEventType>
-{
-public:
-	typedef PluginEventType EvtParams;
-
-public:
-	virtual ~IEventListener_Plugins() = default;
-
-	virtual void DispatchEvent( const PluginEventType& pevt );
-
-protected:
-	virtual void CorePlugins_OnLoaded() {}
-	virtual void CorePlugins_OnInit() {}
-	virtual void CorePlugins_OnOpening() {}		// dispatched prior to plugins being opened
-	virtual void CorePlugins_OnOpened() {}		// dispatched after plugins are opened
-	virtual void CorePlugins_OnClosing() {}		// dispatched prior to plugins being closed
-	virtual void CorePlugins_OnClosed() {}		// dispatched after plugins are closed
-	virtual void CorePlugins_OnShutdown() {}
-	virtual void CorePlugins_OnUnloaded() {}
-};
-
-class EventListener_Plugins : public IEventListener_Plugins
-{
-public:
-	EventListener_Plugins();
-	virtual ~EventListener_Plugins();
-};
-
-// --------------------------------------------------------------------------------------
 //  IEventListener_AppStatus
 // --------------------------------------------------------------------------------------
 class IEventListener_AppStatus : public IEventDispatcher<AppEventInfo>
 {
 public:
 	typedef AppEventInfo EvtParams;
-
-public:
 	virtual ~IEventListener_AppStatus() = default;
-
-	virtual void DispatchEvent( const AppEventInfo& evtinfo );
-
-protected:
-	virtual void AppStatusEvent_OnUiSettingsLoadSave( const AppSettingsEventInfo& evtinfo ) {}
-	virtual void AppStatusEvent_OnVmSettingsLoadSave( const AppSettingsEventInfo& evtinfo ) {}
-
-	virtual void AppStatusEvent_OnSettingsApplied() {}
-	virtual void AppStatusEvent_OnExit() {}
 };
 
 class EventListener_AppStatus : public IEventListener_AppStatus

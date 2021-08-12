@@ -15,113 +15,20 @@
 
 #include "PrecompiledHeader.h"
 #include "App.h"
-#include "Plugins.h"
 
 #include "MemoryCardFile.h"
-#include "Utilities/IniInterface.h"
 
 #include <wx/stdpaths.h>
 #include <memory>
 
 #include "options_tools.h"
+#include "EmuOptionsUI.h"
 
-// --------------------------------------------------------------------------------------
-//  pxDudConfig
-// --------------------------------------------------------------------------------------
-// Used to handle config actions prior to the creation of the ini file (for example, the
-// first time wizard).  Attempts to save ini settings are simply ignored through this
-// class, which allows us to give the user a way to set everything up in the wizard, apply
-// settings as usual, and only *save* something once the whole wizard is complete.
-//
-class pxDudConfig : public wxConfigBase
-{
-protected:
-	wxString	m_empty;
-
-public:
-	virtual ~pxDudConfig() = default;
-
-	virtual void SetPath(const wxString& ) {}
-	virtual const wxString& GetPath() const { return m_empty; }
-
-	virtual bool GetFirstGroup(wxString& , long& ) const { return false; }
-	virtual bool GetNextGroup (wxString& , long& ) const { return false; }
-	virtual bool GetFirstEntry(wxString& , long& ) const { return false; }
-	virtual bool GetNextEntry (wxString& , long& ) const { return false; }
-	virtual size_t GetNumberOfEntries(bool ) const  { return 0; }
-	virtual size_t GetNumberOfGroups(bool ) const  { return 0; }
-
-	virtual bool HasGroup(const wxString& ) const { return false; }
-	virtual bool HasEntry(const wxString& ) const { return false; }
-
-	virtual bool Flush(bool ) { return false; }
-
-	virtual bool RenameEntry(const wxString&, const wxString& ) { return false; }
-
-	virtual bool RenameGroup(const wxString&, const wxString& ) { return false; }
-
-	virtual bool DeleteEntry(const wxString&, bool bDeleteGroupIfEmpty = true) { return false; }
-	virtual bool DeleteGroup(const wxString& ) { return false; }
-	virtual bool DeleteAll() { return false; }
-
-protected:
-	virtual bool DoReadString(const wxString& , wxString *) const  { return false; }
-	virtual bool DoReadLong(const wxString& , long *) const  { return false; }
-
-	virtual bool DoWriteString(const wxString& , const wxString& )  { return false; }
-	virtual bool DoWriteLong(const wxString& , long )  { return false; }
-};
-
-
-DocsModeType				DocsFolderMode = DocsFolder_User;
 bool					UseDefaultSettingsFolder = true;
-bool					UseDefaultPluginsFolder = true;
 
 
 wxDirName				CustomDocumentsFolder;
 wxDirName				SettingsFolder;
-
-wxDirName				PluginsFolder;
-
-static pxDudConfig _dud_config;
-
-// Returns the current application configuration file.  
-// This is preferred over using
-// wxConfigBase::GetAppConfig(), since it defaults to 
-// *not* creating a config file
-// automatically (which is typically highly undesired 
-// behavior in our system)
-static wxConfigBase* GetAppConfig(void)
-{
-	return wxConfigBase::Get( false );
-}
-
-// --------------------------------------------------------------------------------------
-//  AppIniSaver / AppIniLoader
-// --------------------------------------------------------------------------------------
-class AppIniSaver : public IniSaver
-{
-public:
-	AppIniSaver();
-	virtual ~AppIniSaver() = default;
-};
-
-class AppIniLoader : public IniLoader
-{
-public:
-	AppIniLoader();
-	virtual ~AppIniLoader() = default;
-};
-
-AppIniSaver::AppIniSaver()
-	: IniSaver( (GetAppConfig() != NULL) ? *GetAppConfig() : _dud_config )
-{
-}
-
-AppIniLoader::AppIniLoader()
-	: IniLoader( (GetAppConfig() != NULL) ? *GetAppConfig() : _dud_config )
-{
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // PathDefs Namespace -- contains default values for various pcsx2 path names and locations.
@@ -130,12 +37,6 @@ AppIniLoader::AppIniLoader()
 // Most of the time you should use the path folder assignments in Conf() instead, since those
 // are user-configurable.
 //
-
-// Specifies the main configuration folder.
-static wxDirName GetUserLocalDataDir()
-{
-	return wxDirName(wxStandardPaths::Get().GetUserLocalDataDir());
-}
 
 namespace PathDefs
 {
@@ -159,12 +60,6 @@ namespace PathDefs
 			return retval;
 		}
 
-		const wxDirName& Plugins()
-		{
-			static const wxDirName retval( L"plugins" );
-			return retval;
-		}
-
 		const wxDirName& Bios()
 		{
 			static const wxDirName retval(L"bios");
@@ -183,19 +78,6 @@ namespace PathDefs
 			return retval;
 		}
 	};
-
-	// Specifies the root folder for the application install.
-	// (currently it's the CWD, but in the future I intend to move all binaries to a "bin"
-	// sub folder, in which case the approot will become "..") [- Air?]
-
-	//The installer installs the folders which are relative to AppRoot (that's plugins/langs)
-	//  relative to the exe folder, and not relative to cwd. So the exe should be default AppRoot. - avih
-	const wxDirName& AppRoot()
-	{
-		static const wxDirName appCache( (wxDirName)
-				wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath() );
-		return appCache;
-	}
 
 	const wxDirName& LibretroPcsx2Root()
 	{
@@ -232,19 +114,6 @@ namespace PathDefs
 		return LibretroPcsx2Root() + Base::MemoryCards();
 	}
 
-	wxDirName GetPlugins()
-	{
-		// Each linux distributions have his rules for path so we give them the possibility to
-		// change it with compilation flags. -- Gregory
-#ifndef PLUGIN_DIR_COMPILATION
-		return AppRoot() + Base::Plugins();
-#else
-#define xPLUGIN_DIR_str(s) PLUGIN_DIR_str(s)
-#define PLUGIN_DIR_str(s) #s
-		return wxDirName( xPLUGIN_DIR_str(PLUGIN_DIR_COMPILATION) );
-#endif
-	}
-
 	wxDirName GetSettings()
 	{
 		return LibretroPcsx2Root() + Base::Settings();
@@ -254,7 +123,6 @@ namespace PathDefs
 	{
 		switch( folderidx )
 		{
-			case FolderId_Plugins:		return GetPlugins();
 			case FolderId_Settings:		return GetSettings();
 			case FolderId_Bios:			return GetBios();
 			case FolderId_Savestates:	return GetSavestates();
@@ -274,7 +142,6 @@ wxDirName& AppConfig::FolderOptions::operator[]( FoldersEnum_t folderidx )
 {
 	switch( folderidx )
 	{
-		case FolderId_Plugins:		return PluginsFolder;
 		case FolderId_Settings:		return SettingsFolder;
 		case FolderId_Bios:			return Bios;
 		case FolderId_Savestates:	return Savestates;
@@ -286,7 +153,7 @@ wxDirName& AppConfig::FolderOptions::operator[]( FoldersEnum_t folderidx )
 
 		jNO_DEFAULT
 	}
-	return PluginsFolder;		// unreachable, but suppresses warnings.
+	return CustomDocumentsFolder;		// unreachable, but suppresses warnings.
 }
 
 const wxDirName& AppConfig::FolderOptions::operator[]( FoldersEnum_t folderidx ) const
@@ -294,71 +161,7 @@ const wxDirName& AppConfig::FolderOptions::operator[]( FoldersEnum_t folderidx )
 	return const_cast<FolderOptions*>( this )->operator[]( folderidx );
 }
 
-bool AppConfig::FolderOptions::IsDefault( FoldersEnum_t folderidx ) const
-{
-	switch( folderidx )
-	{
-		case FolderId_Plugins:		return UseDefaultPluginsFolder;
-		case FolderId_Settings:		return UseDefaultSettingsFolder;
-		case FolderId_Bios:			return UseDefaultBios;
-		case FolderId_Savestates:	return UseDefaultSavestates;
-		case FolderId_MemoryCards:	return UseDefaultMemoryCards;
-		case FolderId_Cheats:		return UseDefaultCheats;
-		case FolderId_CheatsWS:		return UseDefaultCheatsWS;
 
-		case FolderId_Documents:	return false;
-
-		jNO_DEFAULT
-	}
-	return false;
-}
-
-void AppConfig::FolderOptions::Set( FoldersEnum_t folderidx, const wxString& src, bool useDefault )
-{
-	switch( folderidx )
-	{
-		case FolderId_Plugins:
-			PluginsFolder = src;
-			UseDefaultPluginsFolder = useDefault;
-		break;
-
-		case FolderId_Settings:
-			SettingsFolder = src;
-			UseDefaultSettingsFolder = useDefault;
-		break;
-
-		case FolderId_Bios:
-			Bios = src;
-			UseDefaultBios = useDefault;
-		break;
-
-		case FolderId_Savestates:
-			Savestates = src;
-			UseDefaultSavestates = useDefault;
-		break;
-
-		case FolderId_MemoryCards:
-			MemoryCards = src;
-			UseDefaultMemoryCards = useDefault;
-		break;
-
-		case FolderId_Documents:
-			CustomDocumentsFolder = src;
-		break;
-
-		case FolderId_Cheats:
-			Cheats = src;
-			UseDefaultCheats = useDefault;
-		break;
-
-		case FolderId_CheatsWS:
-			CheatsWS = src;
-			UseDefaultCheatsWS = useDefault;
-		break;
-
-		jNO_DEFAULT
-	}
-}
 
 // --------------------------------------------------------------------------------------
 //  Default Filenames
@@ -402,7 +205,7 @@ namespace FilenameDefs
 
 static wxDirName GetResolvedFolder(FoldersEnum_t id)
 {
-	return g_Conf->Folders.IsDefault(id) ? PathDefs::Get(id) : g_Conf->Folders[id];
+	return  PathDefs::Get(id);
 }
 
 
@@ -469,141 +272,51 @@ AppConfig::AppConfig()
 	GzipIsoIndexTemplate = L"$(f).pindex.tmp";
 }
 
-// ------------------------------------------------------------------------
-void AppConfig::LoadSaveMemcards( IniInterface& ini )
+
+void AppConfig::LoadSaveRootItems()
 {
-	ScopedIniGroup path( ini, L"MemoryCards" );
-
-	for( uint slot=0; slot<2; ++slot )
-	{
-		ini.Entry( pxsFmt( L"Slot%u_Enable", slot+1 ),
-			Mcd[slot].Enabled, Mcd[slot].Enabled );
-		ini.Entry( pxsFmt( L"Slot%u_Filename", slot+1 ),
-			Mcd[slot].Filename, Mcd[slot].Filename );
-	}
-
-	for( uint slot=2; slot<8; ++slot )
-	{
-		int mtport = FileMcd_GetMtapPort(slot)+1;
-		int mtslot = FileMcd_GetMtapSlot(slot)+1;
-
-		ini.Entry( pxsFmt( L"Multitap%u_Slot%u_Enable", mtport, mtslot ),
-			Mcd[slot].Enabled, Mcd[slot].Enabled );
-		ini.Entry( pxsFmt( L"Multitap%u_Slot%u_Filename", mtport, mtslot ),
-			Mcd[slot].Filename, Mcd[slot].Filename );
-	}
-}
-
-void AppConfig::LoadSaveRootItems( IniInterface& ini )
-{
-	IniEntry( GzipIsoIndexTemplate );
+	GzipIsoIndexTemplate = wxString(PCSX2_ui::GzipIsoIndexTemplate);
 
 	wxFileName res(CurrentIso);
 	CurrentIso = res.GetFullPath();
 
-	IniEntry( EnableSpeedHacks );
-	IniEntry( EnableGameFixes );
+	EnableSpeedHacks = PCSX2_ui::EnableSpeedHacks;
+	EnableGameFixes = PCSX2_ui::EnableGameFixes;
 
-	IniEntry( EnablePresets );
-	IniEntry( PresetIndex );
+	EnablePresets = PCSX2_ui::EnablePresets;
+	PresetIndex = PCSX2_ui::PresetIndex;
 	
 	#ifdef __WXMSW__
-	IniEntry( McdCompressNTFS );
+	McdCompressNTFS = PCSX2_ui::McdCompressNTFS;
 	#endif
 }
 
 // ------------------------------------------------------------------------
-void AppConfig::LoadSave( IniInterface& ini )
+void AppConfig::LoadSave()
 {
-	LoadSaveRootItems( ini );
-	LoadSaveMemcards( ini );
+	LoadSaveRootItems();
 
 	// Process various sub-components:
-	Folders			.LoadSave( ini );
-	BaseFilenames	.LoadSave( ini );
-
-	ini.Flush();
-}
-void AppConfig::FolderOptions::ApplyDefaults()
-{
-	if( UseDefaultBios )		Bios		  = PathDefs::GetBios();
-	if( UseDefaultSavestates )	Savestates	  = PathDefs::GetSavestates();
-	if( UseDefaultMemoryCards )	MemoryCards	  = PathDefs::GetMemoryCards();
-	if( UseDefaultPluginsFolder)PluginsFolder = PathDefs::GetPlugins();
-	if( UseDefaultCheats )      Cheats		  = PathDefs::GetCheats();
-	if( UseDefaultCheatsWS )    CheatsWS	  = PathDefs::GetCheatsWS();
+	Folders			.LoadSave();
 }
 
-// ------------------------------------------------------------------------
-AppConfig::FolderOptions::FolderOptions()
-	: Bios			( PathDefs::GetBios() )
-	, Savestates	( PathDefs::GetSavestates() )
-	, MemoryCards	( PathDefs::GetMemoryCards() )
-	, Cheats		( PathDefs::GetCheats() )
-	, CheatsWS      ( PathDefs::GetCheatsWS() ) 
+
+
+// NEW MEM OPTIONS
+void AppConfig::FolderOptions::LoadSave()
 {
-	bitset = 0xffffffff;
-}
 
-void AppConfig::FolderOptions::LoadSave( IniInterface& ini )
-{
-	ScopedIniGroup path( ini, L"Folders" );
+	Bios = PathDefs::GetBios();
+	Savestates = PathDefs::GetSavestates();
+	MemoryCards = PathDefs::GetMemoryCards();
+	Cheats = PathDefs::GetCheats();
+	CheatsWS = PathDefs::GetCheatsWS();
 
-	if( ini.IsSaving() )
-	{
-		ApplyDefaults();
-	}
 
-	IniBitBool( UseDefaultBios );
-	IniBitBool( UseDefaultSavestates );
-	IniBitBool( UseDefaultMemoryCards );
-	IniBitBool( UseDefaultPluginsFolder );
-	IniBitBool( UseDefaultCheats );
-	IniBitBool( UseDefaultCheatsWS );
+	//ApplyDefaults();
 
-	//when saving in portable mode, we save relative paths if possible
-	 //  --> on load, these relative paths will be expanded relative to the exe folder.
-	bool rel = ( ini.IsLoading() );
-	
-	IniEntryDirFile( Bios,  rel);
-	IniEntryDirFile( Savestates,  rel );
-	IniEntryDirFile( MemoryCards,  rel );
-	IniEntryDirFile( Cheats, rel );
-	IniEntryDirFile( CheatsWS, rel );
-
-	IniEntryDirFile( RunDisc, rel );
-
-	if( ini.IsLoading() )
-	{
-		ApplyDefaults();
-
-		for( int i=0; i<FolderId_COUNT; ++i )
-			operator[]( (FoldersEnum_t)i ).Normalize();
-	}
-}
-
-// ------------------------------------------------------------------------
-const wxFileName& AppConfig::FilenameOptions::operator[]( PluginsEnum_t pluginidx ) const
-{
-	IndexBoundsAssumeDev( L"Filename[Plugin]", pluginidx, PluginId_Count );
-	return Plugins[pluginidx];
-}
-
-void AppConfig::FilenameOptions::LoadSave( IniInterface& ini )
-{
-	ScopedIniGroup path( ini, L"Filenames" );
-
-	static const wxFileName pc( L"Please Configure" );
-
-	//when saving in portable mode, we just save the non-full-path filename
- 	//  --> on load they'll be initialized with default (relative) paths (works both for plugins and bios)
-	//note: this will break if converting from install to portable, and custom folders are used. We can live with that.
-	for( int i=0; i<PluginId_Count; ++i )
-	{
-		ini.Entry( tbl_PluginInfo[i].GetShortname(), Plugins[i], pc );
-	}
-
-	ini.Entry( L"BIOS", Bios, pc );
+	for( int i=0; i<FolderId_COUNT; ++i )
+		operator[]( (FoldersEnum_t)i ).Normalize();
 }
 
 // ----------------------------------------------------------------------------
@@ -720,13 +433,6 @@ void AppConfig::ResetPresetSettingsToDefault() {
 	log_cb(RETRO_LOG_INFO, "Reset of speedhack preset to n:1 - Safe (default)\n");
 }
 
-
-
-static wxFileConfig* OpenFileConfig( const wxString& filename )
-{
-	return new wxFileConfig( wxEmptyString, wxEmptyString, filename, wxEmptyString, wxCONFIG_USE_RELATIVE_PATH );
-}
-
 static void SaveUiSettings()
 {
 	if( !wxFile::Exists( g_Conf->CurrentIso ) )
@@ -739,18 +445,14 @@ static void SaveUiSettings()
 	if (!g_Conf->Folders.RunDisc.Exists())
 		g_Conf->Folders.RunDisc.Clear();
 #endif
-	AppIniSaver saver;
-	g_Conf->LoadSave( saver );
-	sApp.DispatchUiSettingsEvent( saver );
+	g_Conf->LoadSave();
+	sApp.DispatchUiSettingsEvent();
 }
 
 static void SaveVmSettings()
 {
-	std::unique_ptr<wxFileConfig> vmini( OpenFileConfig( GetVmSettingsFilename() ) );
-	IniSaver vmsaver( vmini.get() );
-	g_Conf->EmuOptions.LoadSave( vmsaver );
-
-	sApp.DispatchVmSettingsEvent( vmsaver );
+	g_Conf->EmuOptions.LoadSave();
+	sApp.DispatchVmSettingsEvent();
 }
 
 void AppSaveSettings(void)
@@ -773,9 +475,8 @@ void AppSaveSettings(void)
 
 static void LoadUiSettings()
 {
-	AppIniLoader loader;
 	g_Conf = std::make_unique<AppConfig>();
-	g_Conf->LoadSave( loader );
+	g_Conf->LoadSave();
 
 	if( !wxFile::Exists( g_Conf->CurrentIso ) )
 		g_Conf->CurrentIso.clear();
@@ -788,17 +489,14 @@ static void LoadUiSettings()
 		g_Conf->Folders.RunDisc.Clear();
 #endif
 
-	sApp.DispatchUiSettingsEvent( loader );
+	sApp.DispatchUiSettingsEvent();
 }
 
 static void LoadVmSettings()
 {
 	// Load virtual machine options and apply some defaults overtop saved items, which
 	// are regulated by the PCSX2 UI.
-
-	std::unique_ptr<wxFileConfig> vmini( OpenFileConfig( GetVmSettingsFilename() ) );
-	IniLoader vmloader( vmini.get() );
-	g_Conf->EmuOptions.LoadSave( vmloader );
+	g_Conf->EmuOptions.LoadSave();
 
 	g_Conf->EnablePresets = true;
 	g_Conf->PresetIndex = option_value(INT_PCSX2_OPT_SPEEDHACKS_PRESET, KeyOptionInt::return_type);
@@ -809,7 +507,7 @@ static void LoadVmSettings()
 	else
 		g_Conf->ResetPresetSettingsToDefault();
 
-	sApp.DispatchVmSettingsEvent( vmloader );
+	sApp.DispatchVmSettingsEvent();
 }
 
 static void AppLoadSettings()
@@ -826,20 +524,10 @@ static void AppLoadSettings()
 //      that might be saved to the configured ini/settings folder.
 //
 // Notes:
-//   The overwrite option applies to PCSX2 options only.  Plugin option behavior will depend
-//   on the plugins.
+//   The overwrite option applies to PCSX2 options only.
 //
 void AppConfig_OnChangedSettingsFolder()
 {
-	GetSettingsFolder().Mkdir();
-
-	const wxString iniFilename( GetUiSettingsFilename() );
-
-	// Bind into wxConfigBase to allow wx to use our config internally, and delete whatever
-	// comes out (cleans up prev config, if one).
-	delete wxConfigBase::Set( OpenFileConfig( iniFilename ) );
-	GetAppConfig()->SetRecordDefaults(true);
-
 	AppLoadSettings();
 	AppApplySettings();
 	AppSaveSettings();//Make sure both ini files are created if needed.

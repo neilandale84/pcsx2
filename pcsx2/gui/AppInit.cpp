@@ -17,8 +17,6 @@
 #include "App.h"
 #include "MTVU.h" // for thread cancellation on shutdown
 
-#include "Utilities/IniInterface.h"
-
 #include <memory>
 bool Pcsx2App::DetectCpuAndUserMode()
 {
@@ -30,12 +28,6 @@ bool Pcsx2App::DetectCpuAndUserMode()
 #endif
 
 	AppConfig_OnChangedSettingsFolder();
-
-	// force unload plugins loaded by the wizard.  If we don't do this the recompilers might
-	// fail to allocate the memory they need to function.
-	CoreThread.Cancel();
-	CorePlugins.Shutdown();
-	CorePlugins.Unload();
 
 	return true;
 }
@@ -85,8 +77,6 @@ void Pcsx2App::AllocateCoreStuffs()
 			}
 		}
 	}
-
-	LoadPluginsImmediate();
 }
 
 bool Pcsx2App::OnInit()

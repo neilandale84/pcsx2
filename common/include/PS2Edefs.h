@@ -90,10 +90,6 @@ extern "C" {
 
 /* GS plugin API */
 
-// if this file is included with this define
-// the next api will not be skipped by the compiler
-#if defined(GSdefs) || defined(BUILTIN_GS_PLUGIN)
-
 // basic funcs
 
 void CALLBACK GSosdLog(const char *utf8, u32 color);
@@ -114,7 +110,7 @@ void CALLBACK GSgetLastTag(u64 *ptag); // returns the last tag processed (64 bit
 void CALLBACK GSgifSoftReset(u32 mask);
 void CALLBACK GSreadFIFO(u64 *mem);
 void CALLBACK GSinitReadFIFO(u64 *mem);
-void CALLBACK GSreadFIFO2(u64 *mem, int qwc);
+void CALLBACK GSreadFIFO2(u8 *mem, int qwc);
 void CALLBACK GSinitReadFIFO2(u64 *mem, int qwc);
 
 // extended funcs
@@ -139,8 +135,6 @@ void CALLBACK GSgetTitleInfo2(char *dest, size_t length);
 void CALLBACK GSwriteCSR(u32 value);
 s32 CALLBACK GSfreeze(int mode, freezeData *data);
 void CALLBACK GSconfigure();
-
-#endif
 
 /* PAD plugin API -=[ OBSOLETE ]=- */
 
@@ -186,10 +180,6 @@ void CALLBACK PADconfigure();
 
 /* DEV9 plugin API */
 
-// if this file is included with this define
-// the next api will not be skipped by the compiler
-#if defined(DEV9defs) || defined(BUILTIN_DEV9_PLUGIN)
-
 // basic funcs
 
 // NOTE: The read/write functions CANNOT use XMM/MMX regs
@@ -220,13 +210,7 @@ void CALLBACK DEV9async(u32 cycles);
 s32 CALLBACK DEV9freeze(int mode, freezeData *data);
 void CALLBACK DEV9configure();
 
-#endif
-
 /* USB plugin API */
-
-// if this file is included with this define
-// the next api will not be skipped by the compiler
-#if defined(USBdefs) || defined(BUILTIN_USB_PLUGIN)
 
 // basic funcs
 
@@ -254,150 +238,6 @@ void CALLBACK USBsetRAM(void *mem);
 
 s32 CALLBACK USBfreeze(int mode, freezeData *data);
 void CALLBACK USBconfigure();
-
-#endif
-
-// might be useful for emulators
-#ifdef PLUGINtypedefs
-// GS
-// NOTE: GSreadFIFOX/GSwriteCSR functions CANNOT use XMM/MMX regs
-// If you want to use them, need to save and restore current ones
-typedef void(CALLBACK *_GSosdLog)(const char *utf8, u32 color);
-typedef void(CALLBACK *_GSosdMonitor)(const char *key, const char *value, u32 color);
-typedef s32(CALLBACK *_GSopen)(const char *Title, int multithread);
-typedef s32(CALLBACK *_GSopen2)(u32 flags);
-typedef void(CALLBACK *_GSvsync)(int field);
-typedef void(CALLBACK *_GSgifTransfer)(const u32 *pMem, u32 size);
-typedef void(CALLBACK *_GSgifTransfer1)(u32 *pMem, u32 addr);
-typedef void(CALLBACK *_GSgifTransfer2)(u32 *pMem, u32 size);
-typedef void(CALLBACK *_GSgifTransfer3)(u32 *pMem, u32 size);
-typedef void(CALLBACK *_GSgifSoftReset)(u32 mask);
-typedef void(CALLBACK *_GSreadFIFO)(u64 *pMem);
-typedef void(CALLBACK *_GSreadFIFO2)(u64 *pMem, int qwc);
-typedef void(CALLBACK *_GSinitReadFIFO)(u64 *pMem);
-typedef void(CALLBACK *_GSinitReadFIFO2)(u64 *pMem, int qwc);
-
-typedef void(CALLBACK *_GSchangeSaveState)(int, const char *filename);
-typedef void(CALLBACK *_GSgetTitleInfo2)(char *dest, size_t length);
-typedef void(CALLBACK *_GSirqCallback)(void (*callback)());
-typedef void(CALLBACK *_GSsetBaseMem)(void *);
-typedef void(CALLBACK *_GSsetGameCRC)(int, int);
-typedef void(CALLBACK *_GSsetFrameSkip)(int frameskip);
-typedef void(CALLBACK *_GSsetVsync)(int enabled);
-typedef void(CALLBACK *_GSsetExclusive)(int isExclusive);
-typedef std::wstring*(CALLBACK *_GSsetupRecording)(int);
-typedef void(CALLBACK *_GSreset)();
-typedef void(CALLBACK *_GSwriteCSR)(u32 value);
-
-// PAD
-typedef s32(CALLBACK *_PADinit)(u32 flags);
-typedef s32(CALLBACK *_PADopen)();
-typedef u8(CALLBACK *_PADstartPoll)(int pad);
-typedef u8(CALLBACK *_PADpoll)(u8 value);
-typedef u32(CALLBACK *_PADquery)(int pad);
-typedef void(CALLBACK *_PADupdate)(int pad);
-typedef keyEvent *(CALLBACK *_PADkeyEvent)();
-typedef s32(CALLBACK *_PADsetSlot)(u8 port, u8 slot);
-typedef s32(CALLBACK *_PADqueryMtap)(u8 port);
-typedef void(CALLBACK *_PADWriteEvent)(keyEvent &evt);
-
-// DEV9
-// NOTE: The read/write functions CANNOT use XMM/MMX regs
-// If you want to use them, need to save and restore current ones
-typedef s32(CALLBACK *_DEV9open)();
-typedef u8(CALLBACK *_DEV9read8)(u32 mem);
-typedef u16(CALLBACK *_DEV9read16)(u32 mem);
-typedef u32(CALLBACK *_DEV9read32)(u32 mem);
-typedef void(CALLBACK *_DEV9write8)(u32 mem, u8 value);
-typedef void(CALLBACK *_DEV9write16)(u32 mem, u16 value);
-typedef void(CALLBACK *_DEV9write32)(u32 mem, u32 value);
-typedef void(CALLBACK *_DEV9readDMA8Mem)(u32 *pMem, int size);
-typedef void(CALLBACK *_DEV9writeDMA8Mem)(u32 *pMem, int size);
-typedef void(CALLBACK *_DEV9irqCallback)(DEV9callback callback);
-typedef DEV9handler(CALLBACK *_DEV9irqHandler)(void);
-typedef void(CALLBACK *_DEV9async)(u32 cycles);
-
-// USB
-// NOTE: The read/write functions CANNOT use XMM/MMX regs
-// If you want to use them, need to save and restore current ones
-typedef s32(CALLBACK *_USBopen)();
-typedef u8(CALLBACK *_USBread8)(u32 mem);
-typedef u16(CALLBACK *_USBread16)(u32 mem);
-typedef u32(CALLBACK *_USBread32)(u32 mem);
-typedef void(CALLBACK *_USBwrite8)(u32 mem, u8 value);
-typedef void(CALLBACK *_USBwrite16)(u32 mem, u16 value);
-typedef void(CALLBACK *_USBwrite32)(u32 mem, u32 value);
-typedef void(CALLBACK *_USBasync)(u32 cycles);
-
-typedef void(CALLBACK *_USBirqCallback)(USBcallback callback);
-typedef USBhandler(CALLBACK *_USBirqHandler)(void);
-typedef void(CALLBACK *_USBsetRAM)(void *mem);
-#endif
-
-#ifdef PLUGINfuncs
-
-// GS
-#ifndef BUILTIN_GS_PLUGIN
-extern _GSosdLog GSosdLog;
-extern _GSosdMonitor GSosdMonitor;
-extern _GSopen GSopen;
-extern _GSopen2 GSopen2;
-extern _GSvsync GSvsync;
-extern _GSgifTransfer GSgifTransfer;
-extern _GSgifTransfer1 GSgifTransfer1;
-extern _GSgifTransfer2 GSgifTransfer2;
-extern _GSgifTransfer3 GSgifTransfer3;
-extern _GSgifSoftReset GSgifSoftReset;
-extern _GSreadFIFO GSreadFIFO;
-extern _GSinitReadFIFO GSinitReadFIFO;
-extern _GSreadFIFO2 GSreadFIFO2;
-extern _GSinitReadFIFO2 GSinitReadFIFO2;
-
-extern _GSchangeSaveState GSchangeSaveState;
-extern _GSgetTitleInfo2 GSgetTitleInfo2;
-extern _GSirqCallback GSirqCallback;
-extern _GSsetBaseMem GSsetBaseMem;
-extern _GSsetGameCRC GSsetGameCRC;
-extern _GSsetFrameSkip GSsetFrameSkip;
-extern _GSsetVsync GSsetVsync;
-extern _GSsetupRecording GSsetupRecording;
-extern _GSreset GSreset;
-extern _GSwriteCSR GSwriteCSR;
-#endif
-
-// DEV9
-#ifndef BUILTIN_DEV9_PLUGIN
-extern _DEV9open DEV9open;
-extern _DEV9read8 DEV9read8;
-extern _DEV9read16 DEV9read16;
-extern _DEV9read32 DEV9read32;
-extern _DEV9write8 DEV9write8;
-extern _DEV9write16 DEV9write16;
-extern _DEV9write32 DEV9write32;
-extern _DEV9readDMA8Mem DEV9readDMA8Mem;
-extern _DEV9writeDMA8Mem DEV9writeDMA8Mem;
-extern _DEV9irqCallback DEV9irqCallback;
-extern _DEV9irqHandler DEV9irqHandler;
-extern _DEV9async DEV9async;
-#endif
-
-// USB
-#ifndef BUILTIN_USB_PLUGIN
-extern _USBopen USBopen;
-extern _USBread8 USBread8;
-extern _USBread16 USBread16;
-extern _USBread32 USBread32;
-extern _USBwrite8 USBwrite8;
-extern _USBwrite16 USBwrite16;
-extern _USBwrite32 USBwrite32;
-extern _USBasync USBasync;
-
-extern _USBirqCallback USBirqCallback;
-extern _USBirqHandler USBirqHandler;
-extern _USBsetRAM USBsetRAM;
-#endif
-
-#endif
 
 #ifdef __cplusplus
 } // End extern "C"

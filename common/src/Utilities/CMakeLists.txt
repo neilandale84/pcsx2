@@ -21,7 +21,6 @@ set(UtilitiesFinalFlags ${CommonFlags})
 		../../include/Utilities/SafeArray.inl
 		Exceptions.cpp
 		FastFormatString.cpp
-		IniInterface.cpp
 		Mutex.cpp
 		PathUtils.cpp
 		PrecompiledHeader.cpp
@@ -66,7 +65,6 @@ set(UtilitiesHeaders
 if(APPLE)
 	LIST(APPEND UtilitiesSources
 		Darwin/DarwinThreads.cpp
-		Darwin/DarwinMisc.cpp
 		Darwin/DarwinSemaphore.cpp
 	)
 elseif(Windows)
@@ -85,7 +83,6 @@ elseif(Windows)
 else()
 	LIST(APPEND UtilitiesSources
 		Linux/LnxThreads.cpp
-		Linux/LnxMisc.cpp
 		Semaphore.cpp
 	)
 endif()

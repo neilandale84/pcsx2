@@ -34,21 +34,6 @@ public:
     // needed since this class declares virtual members
     virtual ~wxAppTraitsBase() { }
 
-    // hooks for working with the global objects, may be overridden by the user
-    // ------------------------------------------------------------------------
-
-#if wxUSE_CONFIG
-    // create the default configuration object (base class version is
-    // implemented in config.cpp and creates wxRegConfig for wxMSW and
-    // wxFileConfig for all the other platforms)
-    virtual wxConfigBase *CreateConfig();
-#endif // wxUSE_CONFIG
-
-    // wxStandardPaths object is normally the same for wxBase and wxGUI
-    // except in the case of wxMac and wxCocoa
-    virtual wxStandardPaths& GetStandardPaths();
-
-
     // functions abstracting differences between GUI and console modes
     // ------------------------------------------------------------------------
 

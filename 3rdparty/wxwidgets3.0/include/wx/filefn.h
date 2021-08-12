@@ -673,16 +673,6 @@ inline bool wxIsPathSeparator(wxChar c)
 // does the string ends with path separator?
 WXDLLIMPEXP_BASE bool wxEndsWithPathSeparator(const wxString& filename);
 
-#if WXWIN_COMPATIBILITY_2_8
-// split the full path into path (including drive for DOS), name and extension
-// (understands both '/' and '\\')
-// Deprecated in favour of wxFileName::SplitPath
-wxDEPRECATED( WXDLLIMPEXP_BASE void wxSplitPath(const wxString& fileName,
-                                                wxString *pstrPath,
-                                                wxString *pstrName,
-                                                wxString *pstrExt) );
-#endif
-
 // ----------------------------------------------------------------------------
 // classes
 // ----------------------------------------------------------------------------
@@ -720,34 +710,5 @@ private:
 #define wxCHANGE_UMASK(m)
 
 #endif // __UNIX__/!__UNIX__
-
-
-// Path searching
-class WXDLLIMPEXP_BASE wxPathList : public wxArrayString
-{
-public:
-    wxPathList() {}
-    wxPathList(const wxArrayString &arr)
-        { Add(arr); }
-
-    // Adds all paths in environment variable
-    void AddEnvList(const wxString& envVariable);
-
-    // Adds given path to this list
-    bool Add(const wxString& path);
-    void Add(const wxArrayString &paths);
-
-    // Find the first full path for which the file exists
-    wxString FindValidPath(const wxString& filename) const;
-
-    // Find the first full path for which the file exists; ensure it's an
-    // absolute path that gets returned.
-    wxString FindAbsoluteValidPath(const wxString& filename) const;
-
-#if WXWIN_COMPATIBILITY_2_6
-    // Returns true if the path is in the list
-    wxDEPRECATED( bool Member(const wxString& path) const );
-#endif
-};
 
 #endif // _WX_FILEFN_H_

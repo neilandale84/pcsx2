@@ -64,15 +64,11 @@
 #define wxUSE_FILE 1
 #define wxUSE_FFILE 1
 
-#define wxUSE_STDPATHS 1
-
 #define wxUSE_TEXTBUFFER 1
 
 #define wxUSE_TEXTFILE 1
 
 #define wxUSE_DATETIME 1
-
-#define wxUSE_CONFIG 1
 
 #define wxUSE_IPV6          0
 

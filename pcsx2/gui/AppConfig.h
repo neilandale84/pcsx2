@@ -20,22 +20,6 @@
 #include "CDVD/CDVDaccess.h"
 #include <memory>
 
-enum DocsModeType
-{
-	// uses /home/user or /cwd for the program data.  This is the default mode and is the most
-	// friendly to modern computing security requirements; as it isolates all file modification
-	// to a zone of the hard drive that has granted write permissions to the user.
-	DocsFolder_User,
-	
-	// uses a custom location for program data. Typically the custom folder is either the
-	// absolute or relative location of the program -- absolute is preferred because it is
-	// considered more secure by MSW standards, due to DLL search rules.
-	//
-	// To enable PCSX2's "portable" mode, use this setting and specify "." for the custom
-	// documents folder.
-	DocsFolder_Custom,
-};
-
 extern wxDirName		SettingsFolder;				// dictates where the settings folder comes from, *if* UseDefaultSettingsFolder is FALSE.
 
 extern wxDirName GetSettingsFolder();
@@ -60,15 +44,6 @@ public:
 	// ------------------------------------------------------------------------
 	struct FolderOptions
 	{
-		BITFIELD32()
-			bool
-				UseDefaultBios:1,
-				UseDefaultSavestates:1,
-				UseDefaultMemoryCards:1,
-				UseDefaultCheats:1,
-				UseDefaultCheatsWS:1;
-		BITFIELD_END
-
 		wxDirName
 			Bios,
 			Savestates,
@@ -76,13 +51,10 @@ public:
 			Cheats,
 			CheatsWS;
 
-		wxFileName RunDisc;		// last used location for Disc loading.
+		wxFileName RunDisc; // last used location for Disc loading.
 
-		FolderOptions();
-		void LoadSave( IniInterface& conf );
-		void ApplyDefaults();
+		void LoadSave();
 
-		void Set( FoldersEnum_t folderidx, const wxString& src, bool useDefault );
 
 		const wxDirName& operator[]( FoldersEnum_t folderidx ) const;
 		wxDirName& operator[]( FoldersEnum_t folderidx );
@@ -93,11 +65,6 @@ public:
 	struct FilenameOptions
 	{
 		wxFileName Bios;
-		wxFileName Plugins[PluginId_Count];
-
-		void LoadSave( IniInterface& conf );
-
-		const wxFileName& operator[]( PluginsEnum_t pluginidx ) const;
 	};
 
 	// ------------------------------------------------------------------------
@@ -128,22 +95,22 @@ public:
 	//when presets are enabled, the user has practically no control over the emulation settings, and can only choose the preset to use.
 
 	// The next 2 vars enable/disable presets alltogether, and select/reflect current preset, respectively.
-	bool		EnablePresets;
-	int			PresetIndex;
+	bool					EnablePresets;
+	int					PresetIndex;
 
 	wxString				CurrentIso;
-    wxString				CurrentBlockdump;
+    wxString					CurrentBlockdump;
 	wxString				CurrentELF;
 	wxString				CurrentIRX;
-	CDVD_SourceType			CdvdSource;
+	CDVD_SourceType				CdvdSource;
 	wxString				CurrentGameArgs;
 
 	// Memorycard options - first 2 are default slots, last 6 are multitap 1 and 2
 	// slots (3 each)
 	McdOptions				Mcd[8];
 	wxString				GzipIsoIndexTemplate; // for quick-access index with gzipped ISO
-	FolderOptions			Folders;
-	FilenameOptions			BaseFilenames;
+	FolderOptions				Folders;
+	FilenameOptions				BaseFilenames;
 	
 	// PCSX2-core emulation options, which are passed to the emu core prior to initiating
 	// an emulation session.  Note these are the options saved into the GUI ini file and
@@ -157,9 +124,8 @@ public:
 	wxString FullpathToBios() const;
 	wxString FullpathToMcd( uint slot ) const;
 
-	void LoadSave( IniInterface& ini );
-	void LoadSaveRootItems( IniInterface& ini );
-	void LoadSaveMemcards( IniInterface& ini );
+	void LoadSave();
+	void LoadSaveRootItems();
 
 	static int  GetMaxPresetIndex();
 	

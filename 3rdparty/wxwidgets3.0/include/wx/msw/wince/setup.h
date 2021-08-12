@@ -261,14 +261,6 @@
 #define wxUSE_FILE          1
 #define wxUSE_FFILE         1
 
-// Use wxStandardPaths class which allows to retrieve some standard locations
-// in the file system
-//
-// Default is 1
-//
-// Recommended setting: 1 (may be disabled to save space, but not much)
-#define wxUSE_STDPATHS      1
-
 // use wxTextBuffer class: required by wxTextFile
 #define wxUSE_TEXTBUFFER    1
 
@@ -292,16 +284,6 @@
 //
 // Recommended setting: 1
 #define wxUSE_DATETIME      1
-
-// Setting wxUSE_CONFIG to 1 enables the use of wxConfig and related classes
-// which allow the application to store its settings in the persistent
-// storage. Setting this to 1 will also enable on-demand creation of the
-// global config object in wxApp.
-//
-// See also wxUSE_CONFIG_NATIVE below.
-//
-// Recommended setting: 1
-#define wxUSE_CONFIG        1
 
 // Set to 1 to use ipv6 socket classes (requires wxUSE_SOCKETS)
 //

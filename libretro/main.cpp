@@ -14,6 +14,7 @@
 #include <libretro_core_options.h>
 #include <string>
 #include <thread>
+#include <wx/textfile.h>
 #include <wx/stdpaths.h>
 #include <wx/dir.h>
 #include <wx/evtloop.h>
@@ -262,7 +263,7 @@ void retro_init(void)
 	for (wxString bios_file : bios_list)
 	{
 			wxString description;
-			if (IsBIOS(bios_file, description)) {
+			if (IsBIOSlite(bios_file, description)) {
 				std::string log_bios = (std::string)description;				
 				bios_files.push_back((std::string)bios_file);
 				bios_files.push_back((std::string)description);
@@ -290,10 +291,15 @@ void retro_init(void)
 	libretro_set_core_options(environ_cb);
 	option_upscale_mult = option_value(INT_PCSX2_OPT_UPSCALE_MULTIPLIER, KeyOptionInt::return_type);
 
+	std::string sel_bios_path = option_value(STRING_PCSX2_OPT_BIOS, KeyOptionString::return_type);
+	//EmuConfig.BiosFilename .Assign(wxString(sel_bios_path));
+
 	// instantiate the pcsx2 app and so some things on it
 	pcsx2 = &wxGetApp();
 	pxDoOutOfMemory = SysOutOfMemory_EmergencyResponse;
 	g_Conf = std::make_unique<AppConfig>();
+	g_Conf->EmuOptions.BiosFilename.Assign(sel_bios_path);
+	
 
 	// some other stuffs about pcsx2
 
@@ -338,7 +344,6 @@ void retro_init(void)
 		// apply options to pcsx2
 
 		g_Conf->EnablePresets = true;
-		g_Conf->BaseFilenames.Plugins[PluginId_GS] = "Built-in";
 		g_Conf->EmuOptions.EnableIPC = false;
 		g_Conf->EmuOptions.Speedhacks.fastCDVD  = option_value(BOOL_PCSX2_OPT_FASTCDVD, KeyOptionBool::return_type);
 
@@ -904,33 +909,9 @@ wxEventLoopBase* Pcsx2AppTraits::CreateEventLoop()
 	return new wxEventLoop();
 }
 
-#ifdef wxUSE_STDPATHS
-class Pcsx2StandardPaths : public wxStandardPaths
+wxString GetExecutablePath()
 {
-public:
-	virtual wxString GetExecutablePath() const
-	{
-		const char* system = nullptr;
-		environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system);
-		return Path::Combine(system, "pcsx2/PCSX2");
-	}
-	wxString GetResourcesDir() const
-	{
-		const char* system = nullptr;
-		environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system);
-		return Path::Combine(system, "pcsx2/Langs");
-	}
-	wxString GetUserLocalDataDir() const
-	{
-		const char* savedir = nullptr;
-		environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
-		return Path::Combine(savedir, "pcsx2");
-	}
-};
-
-wxStandardPaths& Pcsx2AppTraits::GetStandardPaths()
-{
-	static Pcsx2StandardPaths stdPaths;
-	return stdPaths;
+	const char* system = nullptr;
+	environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system);
+	return Path::Combine(system, "pcsx2/PCSX2");
 }
-#endif
